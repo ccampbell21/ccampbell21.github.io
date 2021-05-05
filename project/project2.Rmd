@@ -1,0 +1,267 @@
+---
+title: "Project 2: Medical School Acceptances"
+author: "Caroline Campbell (csc2963)"
+date: "4/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+library(tidyverse)
+class_diag <- function(probs,truth){
+  
+  #CONFUSION MATRIX: CALCULATE ACCURACY, TPR, TNR, PPV
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  acc=sum(diag(tab))/sum(tab)
+  sens=tab[2,2]/colSums(tab)[2]
+  spec=tab[1,1]/colSums(tab)[1]
+  ppv=tab[2,2]/rowSums(tab)[2]
+
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+  
+  #CALCULATE EXACT AUC
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,auc)
+}
+```
+# Introduction
+
+The dataset `MedGPA` contains information about the status of medical school admissions, GPA, and MCAT scores from 55 undergraduate students (observations) from a Midwest liberal arts college that were medical school applicants. There are 11 variables: `Accept`, `Acceptance`, `Sex`, `BCPM`, `GPA`, `VR`, `PS`, `WS`, `BS`, `MCAT`, and `Apps`. `Accept` indicates whether the applicant was accepted or denied after applying, and `Acceptance` is binary for `Accept` with 1 = accepted, and 0 = denied. `Sex` illustrates whether the applicant was male or female, and their respective college grade point average is measured as `GPA`. Their biology/chemistry/physics/math (or science) GPA is indicated with `BCPM`. The `VR`, `PS`, `WS`, and `BS`measure the verbal reasoning, physical sciences, writing sample, and biological sciences subscore of their total `MCAT` score (i.e., the sum of those variables is equal to `MCAT`). Lastly, the `Apps` variable is a measure of the total number of medical schools that the applicant applied to.
+
+```{r}
+MedGPA <- read_csv("MedGPA.csv")
+#Turning factors to categorical and intervals to numeric
+MedGPA$Accept<-as.character(MedGPA$Accept)
+MedGPA$Sex<-as.character(MedGPA$Sex)
+MedGPA$VR<-as.numeric(MedGPA$VR)
+MedGPA$PS<-as.numeric(MedGPA$PS)
+MedGPA$WS<-as.numeric(MedGPA$WS)
+MedGPA$BS<-as.numeric(MedGPA$BS)
+MedGPA$MCAT<-as.numeric(MedGPA$MCAT)
+MedGPA$Apps<-as.numeric(MedGPA$Apps)
+#renaming 
+MedGPA<-MedGPA%>% select(-X1) %>% mutate(Sex=recode(Sex, F="female", M="male")) %>% mutate(Accept=recode(Accept,D="denied",A="accepted"))
+
+head(MedGPA)
+```
+# MANOVA
+
+```{r}
+#MANOVA
+MedGPAmanova <- manova(cbind(BCPM, GPA, MCAT, Apps)~Accept, data=MedGPA)
+summary(MedGPAmanova)
+#Univariate ANOVAs
+summary.aov(MedGPAmanova)
+#post-hoc t tests for significant ANOVAs
+pairwise.t.test(MedGPA$BCPM,MedGPA$Accept, p.adj="none")
+pairwise.t.test(MedGPA$GPA,MedGPA$Accept, p.adj="none")
+pairwise.t.test(MedGPA$MCAT,MedGPA$Accept, p.adj="none")
+#type-I error rate
+1-(0.95^8)
+#bonferonni adjustment
+0.05/8
+
+##ASSUMPTIONS
+library(rstatix)
+group <- MedGPA$Accept
+DVs <- MedGPA %>% select(BCPM, GPA, MCAT, Apps)
+#Test multivariate normality for each group (null: normality met)
+sapply(split(DVs,group), mshapiro_test)
+#Test homogeneity of covariance-Box's M test (null: homogeneity of vcov mats assumption met)
+box_m(DVs, group)
+```
+After running `MedGPAmanova`, there is at least one acceptance that differs for at least one response variable (`BCPM`, `GPA`, `MCAT`, `Apps`) (Pillai trace=0.31559, pseudo F (450)=5.764, p=0.0006788). There is a significant difference in `BCPM`, `GPA`, and `MCAT` between acceptances (F = 18.219, df = 53, p = 8.179e-05), (F = 21.879, df = 53, p = 2.043e-05), (F = 10.819, df = 53, p = 0.001789), respectively. There were 8 tests done in all (1 MANOVA, 4 ANOVAs, and 3 post-hoc t tests) with an overall type-I error rate of 0.3368, so a (bonferroni adjusted) significance level should be 0.00625 to keep the overall type-I error rate at 0.05. Out of the 3 significant post hoc tests before adjustment, they are all still significant. After testing a few of the MANOVA assumptions, the assumption of random samples and independent observations was likely met. Because we fail to reject the null for `accepted` based on the dependent variables (p-value=0.207), normality was met, but the `denied` group rejected the null (0.0008), which means normality was not met. The Box's M test p-value was 0.723, so we fail to reject the null, meaning the homogeneity of vcov mats assumption was met.
+
+
+# Randomization Test: Correlation
+
+```{r}
+set.seed(348)
+cors <- vector()
+for(i in 1:5000){
+cors[i] <- MedGPA %>% slice(sample(1:n(),replace=T))%>%summarize(cor(BCPM,MCAT)) %>% pull
+}
+#visualization
+hist(cors)
+#correlation
+MedGPA %>% select(BCPM, MCAT) %>% cor()
+#95% confidence interval
+quantile(cors,c(.025, .975))#significantly different because 0 is not between the two 
+```
+The null hypothesis is that there is no linear correlation (i.e., the correlation coefficient is 0). The alternative hypothesis is that there is a linear correlation (i.e., the correlation coefficient is not equal to 0). The 95% confidence interval does not include 0 between the lower 2.5% and upper 97.5%, so we can reject the null hypothesis. Thus, there is a significant linear correlation between BCPM and MCAT scores. The lower limit of the bootstrapped 95% confidence interval is 0.26, and the upper limit is 0.6999. 
+
+# Linear Regression
+
+```{r}
+library(sandwich)
+library(lmtest)
+#centering MCAT
+MedGPA$MCAT_c <- MedGPA$MCAT - mean(MedGPA$MCAT, na.rm=T)
+fit<-lm(GPA~Accept*MCAT_c, data=MedGPA)
+summary(fit)
+#visualization
+MedGPA %>% select(GPA, MCAT, Accept) %>% na.omit %>% 
+    ggplot(aes(MCAT, GPA, color = Accept)) + 
+    geom_point() + geom_smooth(method = "lm") + geom_vline(xintercept = mean(MedGPA$MCAT, 
+    na.rm = T), lty = 2)
+#proportion of variation
+summary(fit)$r.sq 
+#testing homoskedasticity assumption- Ho: homoskedsastic
+bptest(fit)  #p-value > 0.05 = fail to reject null
+#testing normality assumption
+resids<-fit$residuals
+ggplot()+geom_histogram(aes(resids), bins=20)
+shapiro.test(resids) #Ho: true distribution is normal
+#testing linearity assumption
+fitted<-fit$fitted.values
+ggplot()+geom_point(aes(fitted,resids))+geom_hline(yintercept=0, color='red')
+#robust standard errors
+coeftest(fit, vcov = vcovHC(fit))
+```
+The mean/predicted GPA for accepted students with a score of zero on the MCAT is 3.648. For every one-unit increase in `MCAT`, the predicted `GPA` goes up by 0.025 for those that are accepted. For every one-unit increase in `Acceptdenied`, the predicted `GPA` goes down by 0.218. The slope of `MCAT` on `GPA` for `Acceptdenied` is 0.004 less than for `Acceptaccepted`. The model explains 0.4157 of the variation in the outcome. When testing the assumption of homoskedasticity, we fail to reject the null hypothesis, so we have met the homoskedastic assumption (BP=2.658, df=3, p-value=0.448). We can also fail to reject the null for the Shapiro-Wilk test, so the distribution is normal (W=0.968, p-value=0.149). The scatterplot illustrates that the linearity assumption was met. Redoing the regression using robust standard errors, the p-vlaue for `Acceptdenied` increased slightly but is still significant, and the standard error is roughly the same. The p-vlaue for `MCAT_c` decreased slightly but is still significant after using robust standard errors, and the standard error decreased by roughly 0.004. Because both are still significant, we reject the null. The interaction `Acceptdenied:MCAT_c` had an increase in the p-value and standard errors, but the results remained the same in that we fail to reject the null. The intercept remained relatively steady and still has the same results (reject the null). 
+
+# Rerunning Regression Model
+
+```{r}
+# resampling residuals
+fit<-lm(GPA~Accept*MCAT_c, data=MedGPA)
+resids <- fit$residuals  #save residuals
+fitted <- fit$fitted.values  #save yhats
+
+set.seed(348)
+resid_resamp <- replicate(5000, {
+    new_resids <- sample(resids, replace = TRUE)  #resample resids w/ replacement
+    MedGPA$new_GPA <- fitted + new_resids  #add new resids to yhats to get new 'data'
+    fit <- lm(new_GPA ~ Accept*MCAT_c, data = MedGPA)  #refit model
+    coef(fit)  #save coefficient estimates (b0, b1, etc)
+})
+## Estimated SEs
+resid_resamp %>% t %>% as.data.frame %>% summarize_all(sd)
+```
+The boostrap standard error resampling residuals were very close to the original standard errors. The resampled residuals were only slightly less than the original standard errors, and the difference between them and the robust standard errors was greater (i.e., most of the robust standard errors were larger). Because it matches the original model and that resampling residuals assumes that the original model is correct, we would still reject the null hypothesis for `Acceptdenied` and `MCAT_c`.
+
+# Logistic Regression
+
+```{r}
+library(plotROC)
+fit2<-glm(Acceptance~Sex+MCAT, data=MedGPA, family="binomial")
+coeftest(fit2)
+exp(coef(fit2))
+#confusion matrix
+prob<-predict(fit2,type="response")
+table(predict=as.numeric(prob>.5),truth=MedGPA$Acceptance)%>%addmargins
+#Accuracy = 0.727
+(15+25)/55
+#Sensitivity (TPR)=0.833
+25/30
+#Specificity (TNR)=0.6
+15/25
+#Precision (PPV)=0.714
+25/35
+#Density plot of logit
+MedGPA$logit<-predict(fit2,type="link") #get log-odds for everyone
+MedGPA%>%ggplot()+geom_density(aes(logit,color=Accept,fill=Accept), alpha=.4)+
+  theme(legend.position=c(.85,.85))+geom_vline(xintercept=0)+xlab("logit (log-odds)")+
+  geom_rug(aes(logit,color=Accept))+
+  ggtitle("Density Plot of Log-odds (logit)")+
+  theme(plot.title = element_text(hjust = 0.5))
+#ROC curve
+ROCplot<-ggplot(MedGPA)+geom_roc(aes(d=Acceptance,m=prob), n.cuts=0) 
+ROCplot
+#AUC =0.77 = fair
+calc_auc(ROCplot)
+```
+The odds of being accepted for female students is 0.00013. The odds of being accepted for male students are 0.344 times that of female students. Lastly, the odds of acceptance for females based on `MCAT` is 1.306. The accuracy is 0.727, sensitivity (TPR) is 0.833, specificity (TNR) is 0.6, and precision (PPV) is 0.714. All of the values are not extremely high. However, they are above 0.5, and are relatively fair, so the overall outcome is good. From the ROC plot and calculating the AUC to be 0.77, the sensitivity and specificity is considered "fair" because AUC summarizes both values into one. 
+
+# Logistic Regression: All Variables
+
+```{r}
+MedGPA2<-MedGPA %>% na.omit() %>% select(-Accept, -logit)
+fit3<-glm(Acceptance~., data=MedGPA2, family="binomial")
+prob2 <- predict(fit3,type="response")
+#In-sample Classification Diagnostics
+class_diag(prob2, MedGPA2$Acceptance)
+#10-fold CV
+set.seed(1234)
+k=10 #choose number of folds
+data<-MedGPA2[sample(nrow(MedGPA2)),] #randomly order rows
+folds<-cut(seq(1:nrow(MedGPA2)),breaks=k,labels=F) #create folds
+diags<-NULL
+for(i in 1:k){
+  ## Create training and test sets
+  train<-data[folds!=i,]
+  test<-data[folds==i,]
+  truth<-test$Acceptance ## Truth labels for fold i
+  ## Train model on training set (all but fold i)
+  fit3<-glm(Acceptance~.,data=train,family="binomial")
+  ## Test model on test set (fold i)
+  probs<-predict(fit3,newdata = test,type="response")
+  ## Get diagnostics for fold i
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+summarize_all(diags,mean) #average diagnostics across all k folds
+#LASSO
+library(glmnet)
+set.seed(1234)
+
+y<-as.matrix(MedGPA2$Acceptance) #grab response
+x<-model.matrix(Acceptance~.,data=MedGPA2)[,-1]#grab predictors
+head(x)
+
+cv<-cv.glmnet(x,y,family="binomial")
+lasso<-glmnet(x,y,family="binomial",lambda=cv$lambda.1se)
+coef(lasso)
+#10-fold CV (with LASSO variables)
+MedGPA3<-MedGPA2%>%mutate(Male=ifelse(Sex=="Male",1,0))
+set.seed(1234)
+k=10 #choose number of folds
+data<-MedGPA3[sample(nrow(MedGPA3)),] #randomly order rows
+folds<-cut(seq(1:nrow(MedGPA3)),breaks=k,labels=F) #create folds
+diags<-NULL
+for(i in 1:k){
+  ## Create training and test sets
+  train<-data[folds!=i,]
+  test<-data[folds==i,]
+  truth<-test$Acceptance ## Truth labels for fold i
+  ## Train model on training set (all but fold i)
+  fit4<-glm(Acceptance~Male+GPA+PS+WS+BS,data=train,family="binomial")
+  ## Test model on test set (fold i)
+  probs<-predict(fit4,newdata = test,type="response")
+  ## Get diagnostics for fold i
+  diags<-rbind(diags,class_diag(probs,truth))
+}
+summarize_all(diags,mean) #average diagnostics across all k folds
+```
+When predicting `Acceptance` from the rest of the variables, the in-sample classification diagnostics were 0.889 for accuracy, 0.9 for sensitivity, 0.875 for specificity, 0.9 for precision, and 0.95 for AUC. The AUC is considered great. After performing a 10-fold cross-validation with the same model, the accuracy was 0.78, sensitivity was 0.775, specificity was 0.8267, precision was 0.833, and the ACU was 0.899. The AUC decreased from the in-sample metrics, but it can be considered "good". Because it decreased, the model was overfit. After performing LASSO, the `sexmale`, `GPA`, `PS`, `WS`, and `BS` variables were retained. When using the variables chosen by LASSO for 10-fold cross validation, the accuracy was 0.82, sensitivity was 0.867, specificity was 0.777, precision was 0.83, and the AUC was 0.879. All of the values were worse than the in-sample classification diagnostics, but  were slightly better than the first 10-fold cross validation, except the specificity, precision, and AUC were worse. However, the AUC is still considered "good".  
+
+
+
+
+
+
+

@@ -1,0 +1,247 @@
+---
+title: 'Project 1: COVID-19 Trends'
+author: "Caroline Campbell (csc2963)"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", 
+    warning = F, message = F, tidy = TRUE, tidy.opts = list(width.cutoff = 60), 
+    R.options = list(max.print = 100))
+```
+## Introduction
+The following information illustrates data between two datasets. One dataset is based off of the number of COVID-19 cases and fatalities in Texas counties, and the other dataset contains information about the number of COVID vaccine doses administered in all of the counties in Texas based on different age groups. Both datasets were up-to-date for each county as of March 22, 2021. For the case count data, the variables include: County, Confirmed Cases, and Fatalities. The vaccine distribution data includes variables such as County Name, Age Group, and Doses Administered. Both datasets were individually acquired from the Texas Department of State Health Services. 
+
+The topic of COVID-19 cases and vaccine distribution is interesting to me because of the current relevance of the information. Because this month, March, marks a year since the SARS-CoV-2 virus reached Texas, I was compelled to see the current state of different counties in Texas. I hypothesize that counties that have vaccinated more people will have less COVID-19 cases and less fatalities. I expect this association based on the fact that some of the vaccines, such as Moderna and Pfizer, have an efficacy rate of approximately 95%, which leads me to believe that there will be less cases after more of the population has been vaccinated. 
+
+## Tidying: Rearranging Wide/Long
+```{r}
+library(tidyverse)
+covidcases<-read_csv("covidcases.csv")
+covidvaccine<-read_csv("covidvaccine.csv")
+#renaming to replace spaces in column title with an underscore
+names(covidcases)<-gsub("\\s","_",names(covidcases))
+head(covidcases)
+#Making `covidcases` wide then long
+longcovidcases<-covidcases %>% rename(Cases=Confirmed_Cases) %>% 
+  distinct() %>% 
+  pivot_wider(names_from="County",values_from="Cases") %>% 
+  pivot_longer(cols=c(-Fatalities), names_to="County", values_to="Cases", values_drop_na=TRUE) %>% mutate(County = str_replace(County, "Unknown", "Other")) %>% select(County,Cases,Fatalities) %>% arrange(-desc(County))
+head(longcovidcases)
+#renaming to replace "." in column title with an underscore
+names(covidvaccine)<-gsub("\\s","_",names(covidvaccine))
+head(covidvaccine)
+#Making `covidvaccine` wide then long
+longcovidvaccine<-covidvaccine %>%rename(County=County_Name) %>% 
+  distinct() %>% 
+  pivot_wider(names_from = "Age_Group", values_from = "Doses_Administered") %>%
+  pivot_longer(cols=c(-County), names_to="Age_Group", values_to="Vaccinated")
+head(longcovidvaccine)
+```
+First, I replaced the space with an underscore in all of the column titles in both datasets to help run code throughout the rest of the project. Both datasets `covidcases` and `covidvaccine` were long to start with, so I used `pivot_wider()` to demonstrate the use of the function. I then returned the datasets to their long format using `pivot_longer`. I also made a new name for the long data, so I will be able to use it for the rest of the project. For `covidcases` I used `mutate()` and `str_replace()` to modify the "Unknown" counties to "Other" to match the `covidvaccine` dataset, which will help with joining in the next step. 
+
+## Joining/Merging
+```{r}
+longcovidcases %>% full_join(longcovidvaccine, by="County") %>% nrow()
+#Left join
+covidjoined<-longcovidcases %>% left_join(longcovidvaccine, by="County")
+head(covidjoined)
+nrow(covidjoined)
+nrow(longcovidcases)
+nrow(longcovidvaccine)
+1800-1786
+(14/1800)*100
+countNA <- function(z)sum(is.na(z))
+covidjoined %>% summarize_all(countNA)
+nna_covidjoined<-covidjoined %>% na.omit()
+nrow(covidjoined)-nrow(nna_covidjoined)
+```
+The data for `longcovidcases` had 256 observations, and `longcovidvaccine` had 1799 observations. I decided on a left join because I felt that it would be most effective to find the relationship between cases and vaccinations between the counties (i.e., the ID variable). All counties have COVID cases, but not all counties have the same capacity to carry out vaccinations. A left join with `longcovidcases` as the first dataframe would ensure that all counties are accounted for and not dropped. When I compared the number of observations in a full join (1,800) to the number of observations in the left join (1,786), there were only 14 observations that were lost. Less than 1% of observations were lost in the join (0.78%), so completing a left join still allows me to see the association later on in the project. If problems with finding an association were to occur, they would be minor. After finding how many NAs were present, there were relatively consistent numbers of NAs (0) across most variables, except for the `Vaccinated`, which had 565 NAs, so I decided to drop those values. There ended up being 565 observations dropped because of the numerous NAs in the `Vaccinated` category. Because I omitted the NA values, more data was lost. However, there should still be enough data left to find a relationship. 
+
+## Wrangling
+
+### Six Core `dplyr` Functions
+```{r}
+#What county has the highest cases (besides the total number of cases)? (Using `filter()` and `select()`)
+nna_covidjoined %>% filter(Cases == max(Cases)) %>% select(County, Cases) %>% distinct()
+#What county and age group has the most vaccinations? (Using `select()` and `arrange()`)
+nna_covidjoined %>% select(County, Age_Group, Vaccinated) %>% arrange(desc(Vaccinated)) %>% distinct() %>% head()
+#What is the absolute difference between the number of `Cases` and number of `Fatalities`? (Using `mutate()`)
+nna_covidjoined %>% mutate(difference=abs(Cases-Fatalities)) %>% arrange(desc(difference))
+#using `group_by()`, `summarize()`, and `select()`
+nna_covidjoined %>% group_by(County) %>% summarize_all(n_distinct) %>% select(County, Age_Group)
+```
+
+### Using`summarize()` and `group_by()` 
+
+```{r}
+library(kableExtra)
+# Numeric Variable: Summary of `Cases` 
+kable(nna_covidjoined%>% 
+  summarize(mean_Cases=mean(Cases, na.rm=T),
+            cor_Cases_Vaccinations=cor(Cases,Vaccinated, use="pair"),
+            sd_Cases= sd(Cases, na.rm=T),
+            n=n(),
+            max_Cases=max(Cases,na.rm=T), 
+            min_Cases=min(Cases, na.rm=T)) %>%  head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+# Summary of `Cases` grouped by `Age_Group`
+kable(nna_covidjoined%>% group_by(Age_Group) %>% 
+  summarize(mean_Cases=mean(Cases, na.rm=T),
+            sd_Cases= sd(Cases, na.rm=T),
+            n=n(),
+            max_Cases=max(Cases,na.rm=T), 
+            min_Cases=min(Cases, na.rm=T)) %>%  head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) 
+
+# Numeric Variable: Summary of `Vaccinated`
+kable(nna_covidjoined%>% 
+  summarize(mean_Vaccinated=mean(Vaccinated, na.rm=T),
+            sd_Vaccinated= sd(Vaccinated, na.rm=T),
+            n=n(),
+            max_Vaccinated=max(Vaccinated,na.rm=T), 
+            min_Vaccinated=min(Vaccinated, na.rm=T)) %>%  head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+# Summary of `Vaccinated` grouped by `County`
+kable(nna_covidjoined%>% group_by(County) %>% 
+  summarize(mean_Vaccinated=mean(Vaccinated, na.rm=T),
+            sd_Vaccinated= sd(Vaccinated, na.rm=T),
+            n=n(),
+            max_Vaccinated=max(Vaccinated,na.rm=T), 
+            min_Vaccinated=min(Vaccinated, na.rm=T)) %>%  head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+# Numeric Variable: Summary of `Fatalities`
+kable(nna_covidjoined%>% 
+  summarize(mean_Fatalities=mean(Fatalities, na.rm=T),
+            sd_Fatalities= sd(Fatalities, na.rm=T),
+            n=n(),
+            max_Fatalities=max(Fatalities,na.rm=T), 
+            min_Fatalities=min(Fatalities, na.rm=T)) %>%  head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+# Summary of `Fatalities` grouped by `Age_Group`
+kable(nna_covidjoined%>% group_by(Age_Group) %>% 
+  summarize(mean_Fatalities=mean(Fatalities, na.rm=T),
+            sd_Fatalities= sd(Fatalities, na.rm=T),
+            n=n(),
+            max_Fatalities=max(Fatalities,na.rm=T), 
+            min_Fatalities=min(Fatalities, na.rm=T)) %>%  head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+# Categorical Variables
+kable(nna_covidjoined %>% group_by(County, Age_Group) %>% 
+        summarize(mean_Vaccinated=mean(Vaccinated, na.rm=T),
+            n_distinct_Vaccinated=n_distinct(Vaccinated, na.rm=T),
+            n=n(),
+            max_Vaccinated=max(Vaccinated,na.rm=T), 
+            min_Vaccinated=min(Vaccinated, na.rm=T)) %>% head()) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+# Correlation between `Cases` and `People`
+covidjoined %>% summarize(cor(Cases,Vaccinated, use="pair"))
+```
+
+Harris county had the most cases out of all of the counties with 369,892 COVID-19 cases and the most vaccinations with 501,123 vaccines distributed to the 16–49-year-old group. These statistics were generated using the `filter()` and `select()` functions. By utilizing the `mutate()` function, I was able to create another column based on the absolute differences between the number of `Cases` and `Fatalities`. Lastly, I used `group_by()`, `summarize_all()`, and `select()` to find the number of different ages groups per county.
+
+For each of the numerical variables (`Cases`, `Vaccinations`, and `Fatalities`), I performed two summaries. First, I would summarize by the mean, standard deviation, count, max, and min. Then, I did the same statistics again after I grouped by either categorical variable `Age_Group` or `County`. To give the tables a better aesthetic, I used the `kable` package. Lastly, after grouping by the two categorical variables (`County` and `Age_Group`), I ran the same summary statistics for the `Vaccinated` variable. It was interesting to find out that the average number of people vaccinated was around 7,632, which was greater than the average number of fatalities (189).
+
+## Visualizing
+
+### Correlation Heat Map
+```{r}
+cor_cv <- covidjoined %>% select_if(is.numeric) %>% cor(use="pair")
+head(cor_cv)
+
+tidycor_cv<-cor_cv %>% as.data.frame %>% 
+  rownames_to_column("var1") %>% 
+  pivot_longer(-1, names_to="var2", values_to="correlation")
+tidycor_cv
+
+tidycor_cv %>% ggplot(aes(var1,var2, fill=correlation)) +
+  geom_tile()+
+  scale_fill_gradient2(low="red",mid="white",high="blue") +
+  geom_text(aes(label=round(correlation,2)),color = "white", size = 4) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_fixed()+
+  ggtitle("Correlation Between Cases, Fatalities, and Vaccinations") +
+  theme(plot.title =element_text(hjust=0.5))
+```
+_Figure 1:_ This is a correlation heat map between all of the numeric variables (`Cases`, `Fatalities`, and `Vaccinated`). It appears that there is a high correlation between all of the variables. The highest correlation, besides the 1.00 correlation with itself, is between `Fatalities` and `Cases`, with a correlation of 0.99. The lowest correlation is between `Vaccinated` and `Fatalities`, with a correlation of 0.76.
+
+### Two ggplots
+```{r}
+#Number of Counties
+nna_covidjoined %>% summarize(n_distinct(County))
+#Average Number of Cases & Fatalities
+nna_covidjoined %>% summarize(mean(Cases), mean(Fatalities))
+# Relationship between `Cases` and `Fatalities` based on `County` 
+ggplot(nna_covidjoined, aes(Cases, Fatalities, color=County)) +
+  geom_point(stat="summary", fun=mean, shape = "circle", size = 1.5) +
+  geom_point(aes(x=(mean(Cases)), y=(mean(Fatalities))), color="red", shape="diamond", size=6)+
+  ggtitle("Number of Fatalities Against the Number of Cases by County") +
+  theme(plot.title =element_text(hjust=0.5))+
+  xlab("Number of Cases (log scale)")+
+  ylab("Number of Fatalities (log scale)")+
+    scale_x_log10()+scale_y_log10()+
+  theme(axis.text.x = element_text(angle=45, hjust=1), 
+        legend.position="none")
+```
+_Figure 2:_ There is a positive correlation between the number of COVID-19 cases and the number of fatalities caused by the virus based on the county. This makes sense, as we would expect that some of the more populated counties would have more people. Therefore, there is more opportunity for the virus to spread and cause death. The legend for `County` coloration was removed because there are a total of 255 counties. Lastly, the red diamond plotted on top of the scatterplot represents the average number of cases (189) and fatalties (9,677) of all the counties.
+```{r}
+# Relationship between Number of `Vaccinations` and `Age_Group` between `County`
+ggplot(nna_covidjoined, aes(x= Age_Group, y= Vaccinated, fill=County))+
+  geom_bar(stat="summary", fun=mean)+
+  ggtitle("Number of Vaccinations based on Age Group by County") +
+  theme(plot.title =element_text(hjust=0.5))+
+  xlab("Age Group")+
+  scale_y_log10()+
+  scale_y_continuous(name= "Number of Vaccinations (log scale)", breaks = seq(0,3000000, 300000))+
+theme(axis.text.x = element_text(angle=45, hjust=1), 
+        legend.position="none")
+```
+_Figure 3:_ As illustrated above, there is an apparent trend that the 16-49 year-old age group results in the greatest number of COVD-19 vaccinations. The next age group that had the highest number of vaccinations was the 65-79 year-old age group, then 50-64, and lastly the 80+ years. The legend for the `County` coloration was too large, so it needed to be removed. However, the counties in the pink region had the least number of vaccinations, and the red/orange region had the most. 
+
+## Dimensionality Reduction
+
+```{r}
+library(cluster)
+#scaling data
+pam_dat<-nna_covidjoined%>%select(-Age_Group, -County) %>% scale
+#finding number of clusters
+sil_width<-vector()
+for(i in 2:10){  
+  pam_fit <- pam(pam_dat, k = i)  
+  sil_width[i] <- pam_fit$silinfo$avg.width  
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)#2 clusters is best
+#running PAM using numeric variables
+pam2 <-nna_covidjoined %>% select(-Age_Group, -County) %>% scale %>% pam(2)
+pam2
+#visualize
+final<-nna_covidjoined %>% mutate(cluster=pam2$clustering)
+library(plotly)
+final%>%plot_ly(x= ~Cases, y = ~Fatalities, z = ~Vaccinated, color= ~cluster,
+type = "scatter3d", mode = "markers") %>%
+layout(autosize = F, width = 900, height = 400)
+#visualize
+library(GGally)
+nna_covidjoined %>% mutate(cluster=as.factor(pam2$clustering)) %>%
+  ggpairs(columns = c("Cases","Vaccinated","Fatalities"), aes(color=cluster))
+#interpretation of clusters
+pam2$silinfo$widths %>% as.data.frame %>% mutate(x=1221:1) %>%
+ggplot(aes(x, y=sil_width, fill=as.factor(cluster))) + geom_bar(stat="identity") + xlab("") +
+facet_grid(cluster~., scales="free_y") + coord_flip() + theme(legend.position="none")
+#goodness-of-fit: 0.94=strong structure found 
+pam2$silinfo$avg.width
+```
+The numeric variables `Cases`, `Fatalities`, and `Vaccinated` were all scaled and then used to find the optimal number of clusters, which was determined to be 2 clusters. Using `ggplot`, the peak `sil_width` was reached when k=2. After finding the number of clusters to use with PAM, I was able to run PAM and then visualize the three variables in three-dimensional space with `plotly`. Then, I was able to visualize all of the pairwise combinations of the three variables with `GGally`. The highest correlation was between `Fatalities` and `Cases` with a correlation value of 0.969. Specifically, cluster 2 has a higher correlation (0.943) than cluster 1 (0.852). This high correlation was also similarly illustrated in the correlation heat map, previously shown. Lastly, I was able to interpret the clusters using `silinfo$avg.width`. The goodness-of-fit was determined to have an average silhouette width of 0.94, which is indicative of a strong structure. 
