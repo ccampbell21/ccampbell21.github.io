@@ -5,23 +5,24 @@
     <link>/project/</link>
     <description>Recent content in Projects on Caroline Campbell</description>
     <generator>Hugo -- gohugo.io</generator>
-    <language>en-US</language><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Project 1: COVID-19 Trends</title>
-      <link>/project/project1/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/project/project1/</guid>
-      <description>Introduction The following information illustrates data between two datasets. One dataset is based off of the number of COVID-19 cases and fatalities in Texas counties, and the other dataset contains information about the number of COVID vaccine doses administered in all of the counties in Texas based on different age groups. Both datasets were up-to-date for each county as of March 22, 2021.</description>
-    </item>
-    
+    <language>en-US</language>
+    <lastBuildDate>Fri, 07 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Project 2: Medical School Acceptances</title>
       <link>/project/project2/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 07 May 2021 00:00:00 +0000</pubDate>
       
       <guid>/project/project2/</guid>
       <description>Introduction The dataset MedGPA contains information about the status of medical school admissions, GPA, and MCAT scores from 55 undergraduate students (observations) from a Midwest liberal arts college that were medical school applicants. There are 11 variables: Accept, Acceptance, Sex, BCPM, GPA, VR, PS, WS, BS, MCAT, and Apps. Accept indicates whether the applicant was accepted or denied after applying, and Acceptance is binary for Accept with 1 = accepted, and 0 = denied.</description>
+    </item>
+    
+    <item>
+      <title>Project 1: COVID-19 Trends</title>
+      <link>/project/project1/</link>
+      <pubDate>Sun, 04 Apr 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>Introduction The following information illustrates data between two datasets. One dataset is based off of the number of COVID-19 cases and fatalities in Texas counties, and the other dataset contains information about the number of COVID vaccine doses administered in all of the counties in Texas based on different age groups. Both datasets were up-to-date for each county as of March 22, 2021.</description>
     </item>
     
   </channel>

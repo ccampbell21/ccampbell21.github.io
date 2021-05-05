@@ -1,7 +1,7 @@
 ---
 title: 'Project 1: COVID-19 Trends'
 author: "Caroline Campbell (csc2963)"
-date: "`r format(Sys.Date(), '%B %d, %Y')`"
+date: 2021-04-04
 output:
   html_document:
     toc: yes

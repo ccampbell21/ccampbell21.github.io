@@ -2,6 +2,8 @@
 title: "First Post!"
 author: "Caroline Campbell"
 date: 2021-05-05
+hiderelated: true
+hidediscus: true
 ---
 
 ```{r setup, include=FALSE}
