@@ -6,7 +6,19 @@
     <description>Recent content in Posts on Caroline Campbell</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Thu, 23 Jul 2015 21:13:14 -0500</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 05 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>First Post!</title>
+      <link>/post/2021/05/05/first-post/</link>
+      <pubDate>Wed, 05 May 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2021/05/05/first-post/</guid>
+      <description>Hello everyone! This is my first blog post!
+Check out my first project!
+Check out my second project!
+Link to google</description>
+    </item>
+    
     <item>
       <title>Hello R Markdown</title>
       <link>/post/2015/07/23/hello-r-markdown/</link>
