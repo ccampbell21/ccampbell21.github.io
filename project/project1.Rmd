@@ -2,6 +2,8 @@
 title: 'Project 1: COVID-19 Trends'
 author: "Caroline Campbell (csc2963)"
 date: 2021-04-04
+hiderelated: true
+hidediscus: true
 output:
   html_document:
     toc: yes
