@@ -82,12 +82,12 @@ year&lt;-&quot;Class of 2021&quot;</code></pre>
 <p>Now, using a Python code chunk, we can set the second vector to “Graduation”. Putting them together with <code>print()</code> and using <code>r.</code> to access R-defined objects, we get “Class of 2021 Graduation”.</p>
 <pre class="python"><code>#Python code chunk
 semester=&quot;Graduation&quot;
-print(r.year,semester) 
-## Class of 2021 Graduation</code></pre>
+print(r.year,semester) </code></pre>
+<pre><code>## Class of 2021 Graduation</code></pre>
 <p>Similarly, we can get the same result using <code>cat(c())</code> and <code>py$</code> to access Python-defined objects within an R code chunk.</p>
 <pre class="r"><code>#R code chunk
-cat(c(year,py$semester))
-## Class of 2021 Graduation</code></pre>
+cat(c(year,py$semester))</code></pre>
+<pre><code>## Class of 2021 Graduation</code></pre>
 <p><img src="../../../../../post/2021-05-05-r-and-python_files/reticulated_python.png" /></p>
 
             

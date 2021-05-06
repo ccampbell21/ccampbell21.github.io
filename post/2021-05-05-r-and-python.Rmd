@@ -1,11 +1,9 @@
 ---
-title: R and Python
+title: "R and Python"
 author: 'Caroline Campbell'
-date: '2021-05-05'
-slug: new
-categories: []
-tags: []
-description: ''
+date: 2021-05-05
+hiderelated: true
+hidediscus: true
 ---
 
 Here, I will show how we can use reticulate to demonstrate the ways in which R and Python can work together and use information.

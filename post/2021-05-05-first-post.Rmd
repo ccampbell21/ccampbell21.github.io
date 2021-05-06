@@ -1,11 +1,9 @@
 ---
-title: First Post!
+title: "First Post!"
 author: 'Caroline Campbell'
-date: '2021-05-05'
-slug: new
-categories: []
-tags: []
-description: ''
+date: 2021-05-05
+hiderelated: true
+hidediscus: true
 ---
 
 Hello everyone! This is my first blog post! 
@@ -17,8 +15,5 @@ Hello everyone! This is my first blog post!
 
 [Link to google](https://www.google.com)
 
-```{r}
-
-
-```
 ![](/post/2021-05-05-first-post_files/tower.jpeg)
+
