@@ -1,14 +1,12 @@
 ---
-title: "First Post!"
-author: "Caroline Campbell"
-date: 2021-05-05
-hiderelated: true
-hidediscus: true
+title: R and Python
+author: 'Caroline Campbell'
+date: '2021-05-05'
+slug: new
+categories: []
+tags: []
+description: ''
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE)
-```
 
 Hello everyone! This is my first blog post! 
 

@@ -1,12 +1,38 @@
 ---
-title: "R and Python"
-author: "Caroline Campbell"
-date: 2021-05-05
-hiderelated: true
-hidediscus: true
+title: R and Python
+author: 'Caroline Campbell'
+date: '2021-05-05'
+slug: new
+categories: []
+tags: []
+description: ''
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE)
+Here, I will show how we can use reticulate to demonstrate the ways in which R and Python can work together and use information.
+
+This is my last semester at UT, so to wrap up the semester, I will use `reticulate` to celebrate! 
+
+Starting off with an R code chunk, we can set the first vector to "Class of 2021".
+
+```{R}
+#R code chunk
+library(reticulate)
+
+year<-"Class of 2021"
 ```
 
+Now, using a Python code chunk, we can set the second vector to "Graduation". Putting them together with `print()` and using `r.` to access R-defined objects, we get "Class of 2021 Graduation".
+
+```{python}
+#Python code chunk
+semester="Graduation"
+print(r.year,semester) 
+```
+
+Similarly, we can get the same result using `cat(c())` and `py$` to access Python-defined objects within an R code chunk.
+
+```{R}
+#R code chunk
+cat(c(year,py$semester))
+```
+![](/post/2021-05-05-r-and-python_files/reticulated_python.png)

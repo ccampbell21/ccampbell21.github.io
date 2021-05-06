@@ -17,11 +17,11 @@
     </item>
     
     <item>
-      <title>First Post!</title>
-      <link>/post/2021/05/05/first-post/</link>
+      <title>R and Python</title>
+      <link>/post/2021/05/05/new/</link>
       <pubDate>Wed, 05 May 2021 00:00:00 +0000</pubDate>
       
-      <guid>/post/2021/05/05/first-post/</guid>
+      <guid>/post/2021/05/05/new/</guid>
       <description>Hello everyone! This is my first blog post!
 Check out my first project!
 Check out my second project!
@@ -30,11 +30,14 @@ Link to google</description>
     
     <item>
       <title>R and Python</title>
-      <link>/post/2021/05/05/r-and-python/</link>
+      <link>/post/2021/05/05/new/</link>
       <pubDate>Wed, 05 May 2021 00:00:00 +0000</pubDate>
       
-      <guid>/post/2021/05/05/r-and-python/</guid>
-      <description></description>
+      <guid>/post/2021/05/05/new/</guid>
+      <description>Here, I will show how we can use reticulate to demonstrate the ways in which R and Python can work together and use information.
+This is my last semester at UT, so to wrap up the semester, I will use reticulate to celebrate!
+Starting off with an R code chunk, we can set the first vector to “Class of 2021”.
+#R code chunk library(reticulate) year&amp;lt;-&amp;quot;Class of 2021&amp;quot; Now, using a Python code chunk, we can set the second vector to “Graduation”.</description>
     </item>
     
     <item>

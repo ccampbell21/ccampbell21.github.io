@@ -54,7 +54,7 @@
       <div class="container">
         <div class="blog-post">
           <h3>
-            <strong><a href="../../../../../post/2021/05/05/r-and-python/">R and Python</a></strong>
+            <strong><a href="../../../../../post/2021/05/05/new/">R and Python</a></strong>
           </h3>
         </div>
  
@@ -82,20 +82,41 @@ year&lt;-&quot;Class of 2021&quot;</code></pre>
 <p>Now, using a Python code chunk, we can set the second vector to “Graduation”. Putting them together with <code>print()</code> and using <code>r.</code> to access R-defined objects, we get “Class of 2021 Graduation”.</p>
 <pre class="python"><code>#Python code chunk
 semester=&quot;Graduation&quot;
-print(r.year,semester) 
-## Class of 2021 Graduation</code></pre>
+print(r.year,semester) </code></pre>
+<pre><code>## Class of 2021 Graduation</code></pre>
 <p>Similarly, we can get the same result using <code>cat(c())</code> and <code>py$</code> to access Python-defined objects within an R code chunk.</p>
 <pre class="r"><code>#R code chunk
-cat(c(year,py$semester))
-## Class of 2021 Graduation</code></pre>
+cat(c(year,py$semester))</code></pre>
+<pre><code>## Class of 2021 Graduation</code></pre>
 <p><img src="../../../../../post/2021-05-05-r-and-python_files/reticulated_python.png" /></p>
 
             
-
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
             </div>
           </div>
 
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
 
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
         </div>
       </div>
     </div>
